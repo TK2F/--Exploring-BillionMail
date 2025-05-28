@@ -51,7 +51,7 @@ BillionMailをセルフホスト型（ご自身でサーバーを管理する方
 
 ---
 
-## 💬 フィードバック
+## 💬 その他
 このガイドが少しでもあなたのお役に立てれば嬉しいです。  
 ---
 
@@ -111,10 +111,9 @@ If you're new and feel overwhelmed, don't hesitate to ask experts or tech-savvy 
 
 ---
 
-## 💬 Feedback
+## 💬 Other
 
-We hope this guide is helpful to you.  
-If you have any suggestions or notice any issues, feel free to use the "Issues" tab in this GitHub repository.
+We hope this guide is helpful to you. 
 
 ---
 
