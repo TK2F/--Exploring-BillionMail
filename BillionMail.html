@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BillionMailインタラクティブガイド (日本VPS情報追加版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Visualization & Content Choices:
+    - Report Info: BillionMail Guide sections (from Markdown). Goal: Enhance understanding and navigation. Viz/Presentation: Structured text, lists, code blocks, HTML tables. Interaction: Clickable navigation, hover/click for term definitions (modals), copy-to-clipboard for code. Justification: Core guide content is textual/procedural.
+    - Report Info: Section 1.2 (Mail Delivery Components). Goal: Explain components. Viz/Presentation: Card-like layout. Interaction: Direct display. Justification: Digestible chunks.
+    - Report Info: Section 2.1 (VPS Comparison). Goal: Present comparative data, including Japanese providers. Viz/Presentation: Enhanced HTML table with columns for Japanese support and beginner considerations. Interaction: Static display. Justification: Clear, standard, and now more relevant for Japanese beginners.
+    - Report Info: Sections 2.3, 4.1 (Server Setup & Maintenance). Goal: Emphasize security and updates. Viz/Presentation: Highlighted text, specific callouts for security best practices (firewall, user management, SSH keys, regular updates). Justification: Critical for beginners managing their own Linux server.
+    - Report Info: Section 2.3-2.6 (Commands). Goal: Provide usable code. Viz/Presentation: Code blocks with copy button. Interaction: Click to copy. Justification: Practical application.
+    - Report Info: Section 3.5 (Campaign Analytics). Goal: Illustrate report examples. Viz/Presentation: Dummy bar chart (Chart.js). Interaction: Static. Justification: Visual representation.
+    - Library/Method: Vanilla JS for interactions, Tailwind CSS for styling, Chart.js for the dummy chart.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .term {
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            color: #0369a1; /* sky-700 */
+        }
+        .code-block {
+            position: relative;
+            background-color: #1f2937; /* gray-800 */
+            color: #f3f4f6; /* gray-100 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #f59e0b; /* amber-500 */
+            color: #78350f; /* amber-800 */
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        .copy-btn:hover {
+            background-color: #d97706; /* amber-600 */
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+         .modal-body {
+             max-height: 60vh;
+             overflow-y: auto;
+        }
+        .close-btn {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-btn:hover,
+        .close-btn:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .nav-item.active-nav {
+            background-color: #0ea5e9; /* sky-500 */
+            color: white;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .highlight-info {
+            background-color: #fffbeb; /* amber-50 */
+            border-left: 4px solid #f59e0b; /* amber-500 */
+            padding: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
+        }
+        .highlight-info p { color: #b45309; /* amber-700 */ }
+        .security-emphasis {
+            background-color: #fef2f2; /* red-50 */
+            border-left: 4px solid #ef4444; /* red-500 */
+            padding: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
+        }
+        .security-emphasis p { color: #b91c1c; /* red-700 */ }
+    </style>
+</head>
+<body class="bg-stone-100 text-slate-800">
+    <div id="app" class="flex flex-col min-h-screen">
+        <header class="bg-sky-700 text-white p-4 shadow-md sticky top-0 z-50">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-2xl font-bold">BillionMailインタラクティブガイド</h1>
+                <button id="mobileMenuButton" class="md:hidden text-2xl">☰</button>
+            </div>
+        </header>
+
+        <div class="flex flex-1 container mx-auto mt-4">
+            <nav id="sidebar" class="w-full md:w-1/4 bg-white p-4 rounded-lg shadow-lg mr-4 hidden md:block max-h-[calc(100vh-100px)] overflow-y-auto">
+                <h2 class="text-xl font-semibold mb-3 text-sky-800">目次</h2>
+                <ul class="space-y-2">
+                    <li>
+                        <a href="#part1" data-section="part1" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors">第1部：あなた自身のメール配信システムを理解する</a>
+                        <ul class="ml-4 mt-1 space-y-1 hidden">
+                            <li><a href="#part1_1" data-section="part1_1" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">1.1 BillionMailとは何か、なぜ選ぶのか？</a></li>
+                            <li><a href="#part1_2" data-section="part1_2" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">1.2 メール配信の構成要素</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#part2" data-section="part2" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors">第2部：BillionMailシステムのセットアップ</a>
+                        <ul class="ml-4 mt-1 space-y-1 hidden">
+                            <li><a href="#part2_1" data-section="part2_1" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">2.1 VPSを選ぶ</a></li>
+                            <li><a href="#part2_2" data-section="part2_2" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">2.2 ドメイン名の登録</a></li>
+                            <li><a href="#part2_3" data-section="part2_3" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">2.3 初期サーバー設定</a></li>
+                            <li><a href="#part2_4" data-section="part2_4" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">2.4 DockerとDocker Composeのインストール</a></li>
+                            <li><a href="#part2_5" data-section="part2_5" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">2.5 BillionMailのインストール</a></li>
+                            <li><a href="#part2_6" data-section="part2_6" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">2.6 DNSレコード設定</a></li>
+                            <li><a href="#part2_7" data-section="part2_7" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">2.7 初回ログイン</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#part3" data-section="part3" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors">第3部：BillionMailを使ってみよう</a>
+                         <ul class="ml-4 mt-1 space-y-1 hidden">
+                            <li><a href="#part3_1" data-section="part3_1" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">3.1 インターフェース探検</a></li>
+                            <li><a href="#part3_2" data-section="part3_2" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">3.2 購読者とリストの管理</a></li>
+                            <li><a href="#part3_3" data-section="part3_3" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">3.3 初めてのメールキャンペーン作成</a></li>
+                            <li><a href="#part3_4" data-section="part3_4" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">3.4 テストメール送信とキャンペーン開始</a></li>
+                            <li><a href="#part3_5" data-section="part3_5" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">3.5 キャンペーンレポートとアナリティクス</a></li>
+                            <li><a href="#part3_6" data-section="part3_6" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">3.6 SMTPリレー</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#part4" data-section="part4" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors">第4部：システムの健康維持と成長</a>
+                        <ul class="ml-4 mt-1 space-y-1 hidden">
+                            <li><a href="#part4_1" data-section="part4_1" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">4.1 基本的なメンテナンスと運用</a></li>
+                            <li><a href="#part4_2" data-section="part4_2" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">4.2 一般的な問題のトラブルシューティング</a></li>
+                            <li><a href="#part4_3" data-section="part4_3" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">4.3 助けを得る場所</a></li>
+                            <li><a href="#part4_4" data-section="part4_4" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">4.4 メールマーケティングの拡張</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#part5" data-section="part5" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors">第5部：日本でのメールマーケティング</a>
+                        <ul class="ml-4 mt-1 space-y-1 hidden">
+                            <li><a href="#part5_1" data-section="part5_1" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">5.1 日本の迷惑メール防止法</a></li>
+                            <li><a href="#part5_2" data-section="part5_2" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors text-sm">5.2 日本市場向けのメールエチケット</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#part6" data-section="part6" class="nav-item block p-2 rounded hover:bg-sky-100 transition-colors">第6部：結論と次のステップ</a>
+                    </li>
+                </ul>
+            </nav>
+
+            <main id="mainContent" class="w-full md:w-3/4 bg-white p-6 rounded-lg shadow-lg max-h-[calc(100vh-100px)] overflow-y-auto">
+                <section id="part1" class="content-section active">
+                    <h2 class="text-3xl font-bold mb-4 text-sky-800">第1部：あなた自身のメール配信システムを理解する</h2>
+                    <p class="mb-4">自分だけのメール配信システムを持つということは、大きな力と自由を手に入れることです。このセクションでは、その中核となるBillionMailと、メール配信の仕組みについて理解を深めていきましょう。</p>
+                    <div id="part1_1" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">1.1 BillionMailとは何か、そしてなぜそれを選ぶのか？</h3>
+                        <p class="mb-2">まず、今回の主役である<strong class="term" data-term="BillionMail">BillionMail</strong>についてお話ししましょう。BillionMailは、ニュースレターやマーケティングメールの送信、メールコミュニケーションの管理を行うための、あなた自身の個人的なオープンソース・ツールキットのようなものです。特筆すべきは「<strong class="term" data-term="セルフホスト型">セルフホスト型</strong>」であるという点です。これは、あなたが船長としてこの船を操縦するようなもので、あなたが管理するサーバー上でBillionMailを運用します。これはプライバシー保護や仕組みの理解という点で非常に素晴らしいことです。</p>
+                        <p class="font-semibold my-2">BillionMailがあなたにとって素晴らしい選択肢である理由：</p>
+                        <ul class="list-disc list-inside mb-3 space-y-1">
+                            <li><strong>オープンソース＆無料：</strong> ソフトウェア自体の初期費用はかかりません。</li>
+                            <li><strong>必要なだけメールを送信可能：</strong> 送信数に人為的な制限はありません。</li>
+                            <li><strong>成功を追跡：</strong> 開封・クリックなどの分析機能。</li>
+                            <li><strong>プロフェッショナルなテンプレート：</strong> デザイン作成・再利用可能。</li>
+                            <li><strong>あなたのデータはあなたのもの：</strong> データはあなたの管理下に。</li>
+                            <li><strong>内蔵ウェブメール：</strong> RoundCubeでブラウザからメール確認可能。</li>
+                        </ul>
+                        <p class="mb-2">BillionMailは、Mailchimpのような人気の有料Eメールマーケティングプラットフォームに代わる、機能豊富で費用対効果の高い選択肢です。</p>
+                        <div class="highlight-info">
+                            <p class="font-bold">セルフホスティング：良い点と「注意が必要な」点</p>
+                            <p class="text-sm mt-1"><strong>利点：</strong>完全なコントロール、予算に優しい、到達率向上の可能性、ベンダーロックインからの解放。</p>
+                            <p class="text-sm mt-1"><strong>注意が必要な点（これらは一緒に乗り越えましょう！）：</strong>初期設定の手間、あなたがIT部門（アップデート、セキュリティ、バックアップはあなたの責任）、設定ミスの場合のブラックリスト入りのリスク。これらを防ぐことに重点を置きます。</p>
+                        </div>
+                        <p class="text-sm text-slate-600 mb-4">BillionMail自体は無料ですが、VPSの継続的な費用や、設定、学習、保守にかかる時間と労力という「コスト」は考慮が必要です。このトレードオフが、セルフホスティングを選択する上での中心的な考慮事項となります。</p>
+                    </div>
+                    <div id="part1_2" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">1.2 メール配信の構成要素</h3>
+                        <p class="mb-3">私たちのメールシステムを構築するためには、いくつかの重要な「材料」が必要です。それぞれの役割を理解しましょう。</p>
+                        <div class="space-y-3">
+                            <p><strong><span class="term" data-term="ドメイン名">ドメイン名</span>:</strong> `yourcoolcompany.com` のようなあなた固有のウェブアドレス。</p>
+                            <p><strong><span class="term" data-term="VPS">VPS</span> (仮想専用サーバー):</strong> BillionMailソフトウェアを設置し、24時間稼働させるためのLinuxベースのレンタルサーバー。</p>
+                            <p><strong><span class="term" data-term="IPアドレス">IPアドレス</span>:</strong> VPSのインターネット上の住所。</p>
+                            <p><strong><span class="term" data-term="SMTP">SMTP</span> (Simple Mail Transfer Protocol):</strong> メールを送信するためのプロトコル。BillionMailではPostfixを使用。</p>
+                            <p><strong><span class="term" data-term="IMAP/POP3">IMAP/POP3</span>:</strong> メールを受信するためのプロトコル。BillionMailではDovecotを使用。</p>
+                            <p><strong>スパム対策/ウイルス対策:</strong> Rspamdを使用。</p>
+                            <p><strong><span class="term" data-term="DNSレコード">DNSレコード</span> (インターネットのアドレス帳):</strong></p>
+                            <ul class="list-disc list-inside ml-4 text-sm space-y-1">
+                                <li><strong>Aレコード:</strong> ホスト名とIPアドレスを紐付け。</li>
+                                <li><strong>MXレコード:</strong> ドメイン宛メールの配送先サーバーを指定。</li>
+                                <li><strong><span class="term" data-term="SPF">SPF</span>レコード:</strong> 送信を許可されたサーバーを宣言し、なりすまし防止。</li>
+                                <li><strong><span class="term" data-term="DKIM">DKIM</span>レコード:</strong> メールに電子署名を追加し、改ざん防止と送信者認証。</li>
+                                <li><strong><span class="term" data-term="DMARC">DMARC</span>レコード:</strong> SPF/DKIM検証失敗時のポリシー指示とレポート。</li>
+                            </ul>
+                            <p class="mt-2 text-sm text-slate-600">これらのDNSレコードの正確な設定が、メール到達率の鍵です！BillionMailの `bm show-record` コマンドが設定を助けてくれます。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="part2" class="content-section">
+                    <h2 class="text-3xl font-bold mb-4 text-sky-800">第2部：BillionMailシステムのセットアップ（ハンズオンガイド）</h2>
+                    <p class="mb-4">いよいよ実践です！このセクションでは、BillionMailシステムを実際に構築していきます。一つ一つのステップを丁寧に解説しますので、焦らずに進めていきましょう。</p>
+                    <div id="part2_1" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">2.1 「デジタルの土地」を選ぶ - VPS（仮想専用サーバー）</h3>
+                        <p class="mb-2">BillionMailはLinuxベースのソフトウェアです。あなたのコンピュータはWindowsを実行しているので、常にインターネットに接続されたLinux環境が必要です。VPSは、クラウド上にあなた専用のミニサーバーを借りるようなものです。</p>
+                        <p class="font-semibold my-2">BillionMail VPSのシステム要件（推奨）：</p>
+                        <ul class="list-disc list-inside mb-3 space-y-1">
+                            <li><strong>CPU:</strong> 2コア以上</li>
+                            <li><strong>RAM:</strong> 4GB以上</li>
+                            <li><strong>ストレージ:</strong> 40-50GB SSD以上</li>
+                            <li><strong>OS:</strong> Ubuntu 22.04 LTS (ARM64対応ならコスト削減の可能性あり)</li>
+                        </ul>
+                        <div class="security-emphasis">
+                            <p class="font-bold">重要：ポート25とサーバー管理の責任</p>
+                            <p class="text-sm mt-1">多くのVPSプロバイダーは、スパム対策で<strong class="term" data-term="ポート25">ポート25</strong>（SMTP通信用）をブロックしています。契約前に必ず確認し、ブロックされている場合は解除申請が可能か、または<span class="term" data-term="SMTPリレー">SMTPリレー</span>サービス（後述）の利用を検討しましょう。セルフホスト型を選ぶということは、**サーバーのセキュリティ対策やOS・ソフトウェアの定期的なアップデートもあなた自身の責任で行う必要がある**ことを意味します。これらは安定運用に不可欠です。</p>
+                        </div>
+                        <p class="mb-2">VPSプロバイダー比較表（2025年5月時点の情報に基づく目安）：</p>
+                        <div class="overflow-x-auto shadow-md rounded-lg">
+                            <table class="min-w-full bg-white border border-gray-300">
+                                <thead class="bg-sky-100">
+                                    <tr>
+                                        <th class="p-3 border-b text-left text-sm font-semibold text-sky-800">プロバイダー</th>
+                                        <th class="p-3 border-b text-left text-sm font-semibold text-sky-800">月額目安</th>
+                                        <th class="p-3 border-b text-left text-sm font-semibold text-sky-800">ARM64</th>
+                                        <th class="p-3 border-b text-left text-sm font-semibold text-sky-800">ポート25ポリシー</th>
+                                        <th class="p-3 border-b text-left text-sm font-semibold text-sky-800">日本語サポート</th>
+                                        <th class="p-3 border-b text-left text-sm font-semibold text-sky-800">備考</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="p-3 border-b">DigitalOcean</td><td class="p-3 border-b">$24 (Intel/AMD)</td><td class="p-3 border-b">なし</td><td class="p-3 border-b">ブロック(解除不可)</td><td class="p-3 border-b">英語中心</td><td class="p-3 border-b">SMTPリレー必須</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 border-b">Vultr</td><td class="p-3 border-b">$24 (Intel/AMD)</td><td class="p-3 border-b">なし</td><td class="p-3 border-b">ブロック(解除申請可)</td><td class="p-3 border-b">英語中心</td><td class="p-3 border-b">解除申請が必要な場合あり</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 border-b">Linode (Akamai)</td><td class="p-3 border-b">$24 (Intel/AMD)</td><td class="p-3 border-b">なし</td><td class="p-3 border-b">ブロック(解除申請可)</td><td class="p-3 border-b">英語中心</td><td class="p-3 border-b">解除申請が必要な場合あり</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 border-b">Hetzner Cloud</td><td class="p-3 border-b">約$8.6 (ARM64) / 約$11 (Intel)</td><td class="p-3 border-b">あり</td><td class="p-3 border-b">ブロック(条件付き解除可)</td><td class="p-3 border-b">英語/ドイツ語</td><td class="p-3 border-b">ARM64プランあり。ポート25解除に条件あり</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 border-b">Contabo</td><td class="p-3 border-b">約$5 (Intel/AMD)</td><td class="p-3 border-b">なし</td><td class="p-3 border-b">オープン(送信制限あり)</td><td class="p-3 border-b">英語/ドイツ語</td><td class="p-3 border-b">ポート25はオープンだが送信数制限に注意</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 border-b">Oracle Cloud Free Tier</td><td class="p-3 border-b">無料枠 (ARM64)</td><td class="p-3 border-b">あり</td><td class="p-3 border-b">ブロック(解除申請可)</td><td class="p-3 border-b">多言語対応</td><td class="p-3 border-b">ARM64無料枠が魅力。ポート25ポリシー確認と解除申請が必要な可能性</td>
+                                    </tr>
+                                    <tr class="bg-sky-50"><td colspan="6" class="p-2 text-center font-semibold text-sky-700">日本のVPSプロバイダー (日本語サポート充実)</td></tr>
+                                    <tr>
+                                        <td class="p-3 border-b">さくらのVPS</td><td class="p-3 border-b">約1,430円～ (2GB RAM) / 約2,500円～ (4GB RAM)</td><td class="p-3 border-b">なし</td><td class="p-3 border-b">ブロック(解除申請可)</td><td class="p-3 border-b">◎ 充実</td><td class="p-3 border-b">老舗。安定性。日本語ドキュメント豊富</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 border-b">ConoHa VPS</td><td class="p-3 border-b">約1,500円～ (2GB RAM) / 約2,800円～ (4GB RAM)</td><td class="p-3 border-b">なし</td><td class="p-3 border-b">ブロック(解除申請可)</td><td class="p-3 border-b">◎ 充実</td><td class="p-3 border-b">初心者向けコントロールパネル。時間課金あり</td>
+                                    </tr>
+                                     <tr>
+                                        <td class="p-3 border-b">Xserver VPS</td><td class="p-3 border-b">約1,680円～ (4GB RAM)</td><td class="p-3 border-b">なし</td><td class="p-3 border-b">ブロック(解除申請可)</td><td class="p-3 border-b">◎ 充実</td><td class="p-3 border-b">高性能NVMe。国内大手。</td>
+                                    </tr>
+                                     <tr>
+                                        <td class="p-3 border-b">カゴヤ CLOUD VPS</td><td class="p-3 border-b">約1,980円～ (4GB RAM)</td><td class="p-3 border-b">なし</td><td class="p-3 border-b">ブロック(解除申請可)</td><td class="p-3 border-b">◎ 充実</td><td class="p-3 border-b">法人利用も多い。</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="text-sm text-slate-600 mt-2">「格安運用」と「日本語サポートによる安心感」のバランスを考えて選択しましょう。海外ARM64プランはコスト面で魅力的ですが、トラブル時のサポートは英語が基本です。国内VPSは日本語で手厚いサポートが期待できますが、ARM64プランはまだ少ない傾向にあります。ポート25のポリシーはどのプロバイダーでも重要です。</p>
+                    </div>
+                    <div id="part2_2" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">2.2 ドメイン名の登録</h3>
+                        <p class="mb-2">メール配信システムには、あなた専用のドメイン名（例：`your-unique-name.com`）が必要です。これは、あなたのメールアドレス (`yourname@your-unique-name.com`) の一部となり、ブランドの信頼性にも繋がります。</p>
+                        <p class="mb-2">もし、まだドメイン名をお持ちでない場合は、ドメイン登録サービス（レジストラ）で取得する必要があります。代表的なレジストラには、GoDaddy, Namecheap, Google Domains, お名前.com, ムームードメインなどがあります。</p>
+                    </div>
+                     <div id="part2_3" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">2.3 初期サーバー設定（Ubuntu 22.04 LTS）</h3>
+                        <p class="mb-2">VPSを契約し、OSとしてUbuntu 22.04 LTSをインストールしたら、次はいよいよサーバーに接続し、基本的な設定を行います。</p>
+                        <div class="security-emphasis">
+                            <p class="font-bold">セキュリティ最優先！</p>
+                            <p class="text-sm mt-1">Linuxサーバーを自分で運用する以上、セキュリティ対策はあなた自身の重要な責任です。ここでの設定は最低限必要なものであり、常に最新の情報を学び、対策を怠らないようにしましょう。</p>
+                        </div>
+                        <p class="font-semibold mt-3 mb-1">1. サーバーへのSSH接続:</p>
+                        <p class="mb-1 text-sm">Windows TerminalやPuTTYを使い、VPSプロバイダーから提供されたIPアドレス、ユーザー名（通常`root`）、パスワードで接続します。</p>
+                        <div class="code-block">ssh root@your_server_ip<button class="copy-btn">コピー</button></div>
+
+                        <p class="font-semibold mt-3 mb-1">2. 新しいSudoユーザーの作成と基本的なサーバー強化:</p>
+                        <p class="mb-1 text-sm">セキュリティのため、常に `root` ユーザーで作業するのは非常に危険です。代わりに、管理者権限（`sudo`）を持つ新しいユーザーを作成します。</p>
+                        <div class="code-block">adduser newuser <span class="text-gray-400"># 'newuser'は好きな名前に</span><button class="copy-btn">コピー</button></div>
+                        <div class="code-block">usermod -aG sudo newuser<button class="copy-btn">コピー</button></div>
+                        <p class="my-1 text-sm"><strong>強く推奨：</strong>SSHキー認証を設定し、パスワードでの`root`ログインを無効化してください。これにより不正アクセスのリスクを大幅に低減できます。</p>
+
+                        <p class="font-semibold mt-3 mb-1">3. システムのアップデート:</p>
+                        <p class="mb-1 text-sm">まず、サーバーのソフトウェアパッケージを最新の状態にします。これはセキュリティ上非常に重要です。</p>
+                        <div class="code-block">sudo apt update && sudo apt upgrade -y<button class="copy-btn">コピー</button></div>
+
+                        <p class="font-semibold mt-3 mb-1">4. UFW (Uncomplicated Firewall) ファイアウォールの設定:</p>
+                        <p class="mb-1 text-sm">ファイアウォールは、不正なアクセスからサーバーを守るための壁です。</p>
+                        <div class="code-block">sudo ufw default deny incoming<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo ufw default allow outgoing<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo ufw allow ssh <span class="text-gray-400"># SSH接続を許可 (必須!)</span><button class="copy-btn">コピー</button></div>
+                        <p class="my-1 text-sm">BillionMailが必要とするポートも許可します:</p>
+                        <div class="code-block">sudo ufw allow 25/tcp; sudo ufw allow 465/tcp; sudo ufw allow 587/tcp; sudo ufw allow 110/tcp; sudo ufw allow 143/tcp; sudo ufw allow 993/tcp; sudo ufw allow 995/tcp; sudo ufw allow 80/tcp; sudo ufw allow 443/tcp<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo ufw enable<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo ufw status verbose<button class="copy-btn">コピー</button></div>
+                        <p class="mt-1 text-sm text-slate-600">これで基本的なサーバーセキュリティ設定は完了です。しかし、これで万全というわけではありません。継続的な学習と対策が重要です。</p>
+                    </div>
+                    <div id="part2_4" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">2.4 DockerとDocker Composeのインストール</h3>
+                        <p class="mb-2">BillionMailは<strong class="term" data-term="Docker">Docker</strong>という技術で動きます。これによりインストールや管理が簡単になります。</p>
+                        <p class="font-semibold mt-3 mb-1">1. 古いバージョンのアンインストール（必要な場合）:</p>
+                        <div class="code-block">for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done<button class="copy-btn">コピー</button></div>
+                        <p class="font-semibold mt-3 mb-1">2. DockerのAPTリポジトリを設定:</p>
+                        <div class="code-block">sudo apt-get update<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo apt-get install ca-certificates curl<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo install -m 0755 -d /etc/apt/keyrings<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo chmod a+r /etc/apt/keyrings/docker.asc<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo apt-get update<button class="copy-btn">コピー</button></div>
+                        <p class="font-semibold mt-3 mb-1">3. Dockerパッケージのインストール:</p>
+                        <div class="code-block">sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y<button class="copy-btn">コピー</button></div>
+                        <p class="font-semibold mt-3 mb-1">4. Dockerの動作確認:</p>
+                        <div class="code-block">sudo docker run hello-world<button class="copy-btn">コピー</button></div>
+                        <p class="my-1 text-sm">"Hello from Docker!"と表示されれば成功です。</p>
+                        <p class="font-semibold mt-3 mb-1">5. （推奨）Dockerを `sudo` なしで実行:</p>
+                        <div class="code-block">sudo usermod -aG docker ${USER}<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">newgrp docker<button class="copy-btn">コピー</button></div>
+                        <p class="mt-1 text-sm text-slate-600">これでDocker環境が整いました。</p>
+                    </div>
+                     <div id="part2_5" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">2.5 BillionMailのインストール</h3>
+                        <p class="mb-2">いよいよBillionMail本体のインストールです。Docker Composeを使用する方法を推奨します。</p>
+                        <p class="font-semibold mt-3 mb-1">Docker Composeによるインストール手順:</p>
+                        <p class="mb-1 text-sm">1. BillionMailリポジトリのクローン:</p>
+                        <div class="code-block">cd /opt<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo git clone https://github.com/aaPanel/BillionMail.git<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">cd BillionMail<button class="copy-btn">コピー</button></div>
+                        <p class="mb-1 text-sm mt-2">2. 環境設定ファイル `.env` の準備:</p>
+                        <div class="code-block">sudo cp env_init.env .env<button class="copy-btn">コピー</button></div>
+                        <p class="mb-1 text-sm mt-2">3. `.env` ファイルの編集 (例: `sudo nano .env`):</p>
+                        <p class="ml-4 mb-1 text-sm">- `BILLIONMAIL_HOSTNAME`: あなたのメールサーバーのホスト名 (例: `mail.your-domain.com`) を設定。</p>
+                        <p class="ml-4 mb-1 text-sm">- `TZ`: タイムゾーン (例: `Asia/Tokyo`) を設定。</p>
+                        <p class="mb-1 text-sm mt-2">4. BillionMailの起動:</p>
+                        <div class="code-block">sudo docker compose up -d<button class="copy-btn">コピー</button></div>
+                        <p class="my-1 text-sm">エラーなくプロンプトに戻れば成功です。aaPanelコントロールパネルは不要です。</p>
+                        <p class="mt-1 text-sm text-slate-600">代替として `sudo bash install.sh` スクリプトも利用可能です。</p>
+                    </div>
+                     <div id="part2_6" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">2.6 ドメインのDNSレコード設定</h3>
+                        <p class="mb-2">メールが正しく送受信され、スパム扱いされないための最重要ステップです！</p>
+                        <p class="font-semibold mt-3 mb-1">必要なDNSレコード:</p>
+                        <ul class="list-disc list-inside mb-2 space-y-1 text-sm">
+                            <li><strong>Aレコード:</strong> `mail.your-domain.com` → VPSのIPアドレス</li>
+                            <li><strong>MXレコード:</strong> `your-domain.com` → `mail.your-domain.com` (メール配送先)</li>
+                            <li><strong><span class="term" data-term="SPF">SPF</span>レコード (TXT):</strong> 送信許可サーバーリスト (なりすまし防止)</li>
+                            <li><strong><span class="term" data-term="DKIM">DKIM</span>レコード (TXT):</strong> メールの電子署名 (改ざん防止・送信者認証)</li>
+                            <li><strong><span class="term" data-term="DMARC">DMARC</span>レコード (TXT):</strong> SPF/DKIM検証失敗時のポリシー</li>
+                        </ul>
+                         <div class="highlight-info">
+                            <p class="font-bold">`bm show-record` コマンドを活用！</p>
+                            <p class="text-sm mt-1">BillionMailには、これらのレコードに必要な値を表示する便利なコマンドがあります。これをドメイン登録サービス（GoDaddy, Namecheap, お名前.comなど）のDNS管理画面にコピー＆ペーストしましょう。</p>
+                            <div class="code-block mt-2">cd /opt/BillionMail<button class="copy-btn">コピー</button></div>
+                            <div class="code-block">sudo docker compose exec -T billionmail-core-billionmail-1 bm show-record your-domain.com<button class="copy-btn">コピー</button></div>
+                            <p class="text-xs mt-1">（コンテナ名は `sudo docker compose ps` で確認）</p>
+                        </div>
+                        <p class="mb-2 text-sm">各ドメイン登録サービスでの設定方法は、サービスのヘルプを参照してください。TTL、ホスト名、値の入力に注意し、特に長いTXTレコードは正確にコピーします。</p>
+                        <p class="font-semibold mt-3 mb-1">DNS設定の確認:</p>
+                        <p class="text-sm">設定後、<a href="https://mxtoolbox.com/" target="_blank" class="text-sky-600 hover:underline">MXToolbox</a>などで各レコードが正しく反映されているか確認しましょう。反映には数分～48時間かかることがあります。</p>
+                    </div>
+                     <div id="part2_7" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">2.7 BillionMailへのアクセスと初回ログイン</h3>
+                        <p class="mb-2">DNS設定が完了し、BillionMailが起動していれば、管理画面にアクセスできます。</p>
+                        <p class="font-semibold mt-3 mb-1">1. Web UIへのアクセス:</p>
+                        <p class="mb-1 text-sm">ブラウザで `.env` に設定した `BILLIONMAIL_HOSTNAME` (例: `http://mail.your-domain.com`) にアクセス。</p>
+                        <p class="font-semibold mt-3 mb-1">2. デフォルトのログイン情報確認:</p>
+                        <p class="mb-1 text-sm">サーバーのターミナルで以下を実行：</p>
+                        <div class="code-block">cd /opt/BillionMail<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo docker compose exec -T billionmail-core-billionmail-1 bm default<button class="copy-btn">コピー</button></div>
+                        <p class="font-semibold mt-3 mb-1">3. 初回ログインとパスワード変更:</p>
+                        <p class="mb-1 text-sm">表示された情報でログインし、必ずパスワードを変更してください。</p>
+                        <p class="font-semibold mt-3 mb-1">4. SSL設定（HTTPS化）:</p>
+                        <p class="mb-1 text-sm">BillionMailは無料SSLの自動有効化を目指しています。もし `http://` で警告が出る場合は、管理画面内のSSL設定やLet's Encryptの設定を確認します。正しく設定されると `https://` で安全にアクセスできます。</p>
+                        <p class="font-semibold mt-3 mb-1">5. RoundCube Webmailへのアクセス:</p>
+                        <p class="mb-1 text-sm">`https://mail.your-domain.com/roundcube/` のようなパスでアクセスし、BillionMailで作成したメールアカウントでログインして送受信テストができます。</p>
+                        <p class="mt-1 text-sm text-slate-600">これで基本的なセットアップと初回ログインは完了です！</p>
+                    </div>
+                </section>
+
+                <section id="part3" class="content-section">
+                    <h2 class="text-3xl font-bold mb-4 text-sky-800">第3部：BillionMailを使ってみよう - 初めてのメールキャンペーン</h2>
+                    <p class="mb-4">セットアップ完了おめでとうございます！このセクションでは、実際にBillionMailを使って、初めてのメールキャンペーンを作成し、送信するまでの手順を解説します。インターフェースの探検から始め、リスト管理、キャンペーン作成、そして結果の分析まで、一緒に見ていきましょう。</p>
+                    <div id="part3_1" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">3.1 BillionMailインターフェースの探検</h3>
+                        <p class="mb-2">BillionMailの管理画面にログインし、主な機能を見てみましょう。一般的なメールマーケティングツールと似た構成になっているはずです。</p>
+                        <ul class="list-disc list-inside mb-3 space-y-1">
+                            <li><strong>ダッシュボード:</strong> 主要指標（送信数、開封率など）の概要。</li>
+                            <li><strong>キャンペーン (Campaigns):</strong> メール配信の作成・管理。</li>
+                            <li><strong>リスト (Lists) / 購読者 (Subscribers):</strong> メールアドレスリストの管理。</li>
+                            <li><strong>テンプレート (Templates):</strong> メールデザインの作成・保存。</li>
+                            <li><strong>レポート (Reports) / アナリティクス (Analytics):</strong> キャンペーン成果の分析。</li>
+                            <li><strong>設定 (Settings):</strong> システム全体の各種設定。</li>
+                        </ul>
+                        <p class="text-sm text-slate-600">各セクションをクリックして、どんな機能があるか実際に確認してみましょう。</p>
+                    </div>
+                    <div id="part3_2" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">3.2 購読者とリストの管理</h3>
+                        <p class="mb-2">メールを送る相手（購読者）のリストを管理します。</p>
+                        <p class="font-semibold mt-3 mb-1">1. 購読者リストの作成:</p>
+                        <p class="mb-1 text-sm">目的に応じたリスト（例：「ニュースレター購読者」）を作成します。</p>
+                        <p class="font-semibold mt-3 mb-1">2. 購読者のインポート:</p>
+                        <p class="mb-1 text-sm">既存のメールアドレスリスト（通常CSV形式）をインポートできます。</p>
+                        <p class="font-semibold mt-3 mb-1">3. タグとセグメンテーションの理解:</p>
+                        <p class="mb-1 text-sm"><strong class="term" data-term="タグ">タグ</strong>（特定のキーワードを付与）や<strong class="term" data-term="セグメンテーション">セグメンテーション</strong>（属性に基づく動的グループ化）で、よりターゲットを絞った配信が可能です。</p>
+                    </div>
+                    <div id="part3_3" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">3.3 初めてのメールキャンペーン作成</h3>
+                        <p class="mb-2">リストの準備ができたら、メールキャンペーンを作成します。</p>
+                        <p class="font-semibold mt-3 mb-1">1. キャンペーンの基本設定:</p>
+                        <ul class="list-disc list-inside text-sm mb-2 space-y-1">
+                            <li>キャンペーン名（管理用）</li>
+                            <li>件名 (Subject) - 開封率を左右！</li>
+                            <li>送信者名 (From Name)</li>
+                            <li>送信元メールアドレス (From Email)</li>
+                            <li>返信先メールアドレス (Reply-to Email)</li>
+                        </ul>
+                        
+                        <p class="font-semibold mt-3 mb-1">2. テンプレートの選択または作成:</p>
+                        <p class="mb-1 text-sm">既存テンプレートを利用するか、WYSIWYG/HTMLエディタで新規作成します。</p>
+                        
+                        <p class="font-semibold mt-3 mb-1">3. メールコンテンツの作成:</p>
+                        <p class="mb-1 text-sm">本文、画像、リンクを追加。明確なメッセージ、魅力的なビジュアル、行動を促すCTAボタンが重要です。<code class="bg-slate-200 p-1 rounded text-xs">{{firstName}}</code>のような<strong class="term" data-term="パーソナライゼーショントークン">パーソナライゼーショントークン</strong>も活用しましょう。</p>
+
+                        <p class="font-semibold mt-3 mb-1">4. 必須情報の記載（日本の法律関連）:</p>
+                        <p class="mb-1 text-sm">特定電子メール法に基づき、送信者情報や受信拒否の通知方法などを記載します（詳細は第5部）。</p>
+                    </div>
+                     <div id="part3_4" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">3.4 テストメールの送信とキャンペーンの開始</h3>
+                        <p class="mb-2">送信前に必ずテストを行いましょう。</p>
+                        <p class="font-semibold mt-3 mb-1">1. テストメールの送信:</p>
+                        <p class="mb-1 text-sm">自分や関係者にテストメールを送り、以下の点を確認します:</p>
+                        <ul class="list-disc list-inside text-sm mb-2 space-y-1">
+                            <li>件名、送信者名の表示</li>
+                            <li>デザイン、レイアウト（異なるクライアント/デバイスで確認）</li>
+                            <li>画像の表示、リンクの動作</li>
+                            <li>誤字脱字、パーソナライゼーショントークンの置換</li>
+                            <li>受信拒否リンクの機能、スパム判定</li>
+                        </ul>
+                        <p class="font-semibold mt-3 mb-1">2. キャンペーンの送信またはスケジューリング:</p>
+                        <p class="mb-1 text-sm">テストで問題なければ、送信対象リストを選択し、即時送信または日時指定で配信します。</p>
+                    </div>
+                    <div id="part3_5" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">3.5 キャンペーンレポートとアナリティクスの理解</h3>
+                        <p class="mb-2">送信結果を分析し、次回改善に繋げます。BillionMailは高度な分析機能を提供しています。</p>
+                        <p class="font-semibold mt-3 mb-1">主要な指標:</p>
+                        <ul class="list-disc list-inside text-sm mb-2 space-y-1">
+                            <li>到達率 (Delivery Rate)</li>
+                            <li>開封率 (Open Rate)</li>
+                            <li>クリック率 (CTR)</li>
+                            <li>バウンス率 (Bounce Rate)</li>
+                            <li>購読解除率 (Unsubscribe Rate)</li>
+                        </ul>
+                        <p class="mb-2 text-sm">これらの指標から、件名、コンテンツ、リストの質などを評価し改善します。</p>
+                        <p class="font-semibold mt-3 mb-1">ダミーキャンペーンレポートの例:</p>
+                        <div class="chart-container my-4">
+                            <canvas id="campaignAnalyticsChart"></canvas>
+                        </div>
+                        <p class="text-xs text-center text-slate-500 mb-4">これはBillionMailで表示されるレポートのイメージです。</p>
+                    </div>
+                    <div id="part3_6" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">3.6 SMTPリレー（オプションだが初心者には推奨）</h3>
+                        <p class="mb-2">BillionMail自体がメールサーバーとして機能しますが、特に初心者の場合やVPSの<strong class="term" data-term="ポート25">ポート25</strong>がブロックされている場合、<strong class="term" data-term="SMTPリレー">SMTPリレーサービス</strong>の利用が推奨されます。</p>
+                        <p class="font-semibold mt-3 mb-1">SMTPリレーとは？ なぜ使うのか？</p>
+                        <ul class="list-disc list-inside text-sm mb-2 space-y-1">
+                            <li>ISPによるポート25ブロックの回避。</li>
+                            <li>IPレピュテーション問題の回避（到達率向上）。</li>
+                            <li>大手メールプロバイダーのスパム対策。</li>
+                        </ul>
+                        <p class="mb-2">BillionMailはSMTPリレーをサポートしています。代表的なサービス（無料プランあり）：</p>
+                        <div class="overflow-x-auto">
+                           <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow mb-4">
+                                <thead class="bg-sky-100">
+                                    <tr>
+                                        <th class="p-3 border-b text-left text-sm font-semibold text-sky-800">サービス名</th>
+                                        <th class="p-3 border-b text-left text-sm font-semibold text-sky-800">無料プラン制限</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td class="p-3 border-b">SendGrid</td><td class="p-3 border-b">100通/日 (トライアル後有料)</td></tr>
+                                    <tr><td class="p-3 border-b">Brevo (旧Sendinblue)</td><td class="p-3 border-b">300通/日</td></tr>
+                                    <tr><td class="p-3 border-b">Mailgun</td><td class="p-3 border-b">100通/日</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="font-semibold mt-3 mb-1">BillionMailでのSMTPリレー設定:</p>
+                        <p class="mb-1 text-sm">管理画面でSMTPサーバーホスト名, ポート, ユーザー名, パスワード, 暗号化方式などを設定します。リレーサービス利用時も、指定されたDNSレコード（SPF, DKIM関連）の設定が必要です。</p>
+                        <p class="mt-1 text-sm text-slate-600">初心者やポート25ブロック時は、SMTPリレーで配信安定性と到達率向上が期待できます。</p>
+                    </div>
+                </section>
+
+                <section id="part4" class="content-section">
+                    <h2 class="text-3xl font-bold mb-4 text-sky-800">第4部：システムの健康維持と成長</h2>
+                     <p class="mb-4">素晴らしい！BillionMailの基本をマスターし、最初のキャンペーンも送信できましたね。しかし、本当の冒険はここから。このセクションでは、あなたのメール配信システムを健康に保ち、さらに成長させるための秘訣を伝授します。メンテナンス、トラブルシューティング、そしてスキルアップの方法を学びましょう。</p>
+                     <div id="part4_1" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">4.1 基本的なメンテナンスと運用</h3>
+                        <p class="mb-2">システムを健康に保つための日常作業です。特にLinuxサーバーの運用では、<strong class="text-red-600">セキュリティ対策と定期的なアップデートが不可欠</strong>です。これを怠ると、サーバーが乗っ取られたり、個人情報が漏洩したりする深刻な事態を招きかねません。</p>
+                        <p class="font-semibold mt-3 mb-1">1. BillionMailのアップデート:</p>
+                        <p class="mb-1 text-sm">`bm update` コマンドや `docker compose pull` & `up` で最新の状態に保ちます。セキュリティ向上や新機能のため重要です。</p>
+                        <div class="code-block">cd /opt/BillionMail<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo docker compose exec -T billionmail-core-billionmail-1 bm update <span class="text-gray-400"># または</span><button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo docker compose pull && sudo docker compose up -d --remove-orphans<button class="copy-btn">コピー</button></div>
+
+                        <p class="font-semibold mt-3 mb-1">2. データのバックアップ:</p>
+                        <p class="mb-1 text-sm">万一に備え、設定ファイル (`docker-compose.yml`, `.env`)、PostgreSQLデータベース (`pg_dump`)、メールデータ (Maildirボリューム) を定期的にバックアップしましょう。</p>
+                        <div class="code-block"># PostgreSQLデータベースのバックアップ例
+sudo docker compose exec -T billionmail-pgsql-billionmail-1 pg_dump -U billionmail -d billionmail > /opt/BillionMail/backups/db_backup_$(date +%Y%m%d_%H%M%S).sql<button class="copy-btn">コピー</button></div>
+
+                        <p class="font-semibold mt-3 mb-1">3. ログの監視:</p>
+                        <p class="mb-1 text-sm">問題発生時の手がかり。`docker logs <container_name>` で各コンテナのログを確認します。</p>
+                        <div class="code-block">sudo docker logs billionmail-core-billionmail-1 -f --tail 100<button class="copy-btn">コピー</button></div>
+
+                        <p class="font-semibold mt-3 mb-1">4. サーバーのセキュリティとOSアップデート（超重要！）:</p>
+                        <div class="security-emphasis">
+                            <p class="font-bold">サーバー管理者の責任：セキュリティアップデートを怠らない！</p>
+                            <p class="text-sm mt-1">Linuxサーバー (Ubuntu) やDocker、BillionMail自体のセキュリティ脆弱性は日々発見される可能性があります。これらを放置すると、悪意のある攻撃者にシステムを乗っ取られたり、スパムメールの踏み台にされたり、顧客情報が盗まれたりする危険性があります。**最低でも月に一度はOSとインストール済みソフトウェアのアップデートを行いましょう。**</p>
+                        </div>
+                        <p class="mb-1 text-sm">OSの定期アップデート:</p>
+                        <div class="code-block">sudo apt update && sudo apt list --upgradable<button class="copy-btn">コピー</button></div>
+                        <div class="code-block">sudo apt upgrade -y<button class="copy-btn">コピー</button></div>
+                        <p class="mb-1 text-sm">UFWファイアウォールの維持、強力なパスワードとSSHキー認証の徹底も継続してください。</p>
+                    </div>
+                     <div id="part4_2" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">4.2 一般的な問題のトラブルシューティング</h3>
+                        <p class="mb-2">問題発生時の対処法。鍵はログファイルにあり！</p>
+                        <details class="mb-3 bg-stone-50 p-3 rounded-md shadow">
+                            <summary class="font-semibold cursor-pointer text-sky-700">メールがスパムフォルダに入る、または届かない</summary>
+                            <div class="mt-2 text-sm space-y-1">
+                                <p><strong>原因:</strong> DNS設定不備 (SPF, DKIM, DMARC)、IPレピュテーション低、メールコンテンツの問題、ブラックリスト登録。</p>
+                                <p><strong>対処:</strong> MXToolboxでDNS再確認、IPレピュテーション確認、コンテンツ見直し、ブラックリスト確認・解除申請、送信ドメインウォームアップ、SMTPリレー検討。</p>
+                            </div>
+                        </details>
+                        <details class="mb-3 bg-stone-50 p-3 rounded-md shadow">
+                            <summary class="font-semibold cursor-pointer text-sky-700">メールを送受信できない</summary>
+                            <div class="mt-2 text-sm space-y-1">
+                                <p><strong>原因:</strong> DNS設定問題 (MX, Aレコード)、ファイアウォール設定ミス、Postfix/Dovecotコンテナ問題、VPSプロバイダーによるポートブロック (特に25)。</p>
+                                <p><strong>対処:</strong> DNS再確認、`sudo ufw status`確認、`sudo docker compose ps`でコンテナ状態確認・ログ確認・再起動、ポート25ポリシー確認・解除依頼orSMTPリレー。</p>
+                            </div>
+                        </details>
+                        <details class="mb-3 bg-stone-50 p-3 rounded-md shadow">
+                            <summary class="font-semibold cursor-pointer text-sky-700">BillionMail管理画面にアクセスできない</summary>
+                            <div class="mt-2 text-sm space-y-1">
+                                <p><strong>原因:</strong> Webアプリコンテナ未起動、HTTP(80)/HTTPS(443)ポートブロック、DNSのAレコード不備、`.env`の`BILLIONMAIL_HOSTNAME`設定ミス。</p>
+                                <p><strong>対処:</strong> コンテナ状態・ログ確認、ファイアウォール確認、IP直アクセスで切り分け、`.env`確認。</p>
+                            </div>
+                        </details>
+                         <p class="text-sm text-slate-600">BillionMail GitHub Issuesも参考にしましょう。</p>
+                    </div>
+                     <div id="part4_3" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">4.3 助けを得る場所</h3>
+                        <p class="mb-2">一人で悩まず、リソースを活用しましょう。</p>
+                        <ul class="list-disc list-inside text-sm mb-2 space-y-1">
+                            <li><a href="https://github.com/aaPanel/BillionMail/issues" target="_blank" class="text-sky-600 hover:underline">BillionMail GitHub Issues</a>: バグ報告、機能リクエスト、解決策。</li>
+                            <li>BillionMail Discordチャンネル: コミュニティサポート。</li>
+                            <li>BillionMailフォーラム: 公式サイトにあれば。</li>
+                            <li>BillionMail公式有償サポート: デプロイメント支援など ($49.9 USD～)。</li>
+                            <li>一般的なDocker/Linuxコミュニティ: Stack Overflow, Reddit, teratailなど。</li>
+                            <li><strong class="text-sky-700">契約している日本のVPSプロバイダーのサポート:</strong> サーバー自体の問題やネットワーク接続の問題など、VPS側の問題が疑われる場合は、日本語でサポートを受けられる可能性があります。</li>
+                        </ul>
+                        <p class="text-xs text-slate-500">オープンソースコミュニティは貴重ですが、回答に時間がかかることもあります。</p>
+                    </div>
+                    <div id="part4_4" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">4.4 メールマーケティングの拡張（概要）</h3>
+                        <p class="mb-2">基本操作に慣れたら、さらに効果を高めるステップへ。</p>
+                        <p class="font-semibold mt-3 mb-1">高度な機能の活用（BillionMail将来計画含む）:</p>
+                        <ul class="list-disc list-inside text-sm mb-2 space-y-1">
+                            <li><strong>A/Bテスト:</strong> 件名やコンテンツのバリエーションを比較検証。</li>
+                            <li><strong>自動化ワークフロー:</strong> 特定トリガーで一連のメールを自動送信。</li>
+                        </ul>
+                        <p class="font-semibold mt-3 mb-1">他のツールとの連携（BillionMail将来計画含む）:</p>
+                        <ul class="list-disc list-inside text-sm mb-2 space-y-1">
+                            <li><strong>CRMシステム:</strong> 顧客情報一元管理と連携。</li>
+                            <li><strong>アナリティクスプラットフォーム:</strong> Google Analyticsなどと連携。</li>
+                        </ul>
+                        <p class="font-semibold mt-3 mb-1">コンテンツの質とリストの健全性維持:</p>
+                        <ul class="list-disc list-inside text-sm mb-2 space-y-1">
+                            <li>価値あるコンテンツの提供。</li>
+                            <li>リストクリーニング（バウンスアドレス削除など）。</li>
+                        </ul>
+                         <p class="font-semibold mt-3 mb-1">代替プラットフォームの検討:</p>
+                        <ul class="list-disc list-inside text-sm mb-2 space-y-1">
+                            <li>他のオープンソース: Mauticなど。</li>
+                            <li>有料SaaS: Mailchimp, Brevoなど（サーバー管理不要）。</li>
+                        </ul>
+                        <p class="mt-1 text-sm text-slate-600">メールシステムの根本理解は、将来どのツールを使っても役立ちます。</p>
+                    </div>
+                </section>
+
+                <section id="part5" class="content-section">
+                    <h2 class="text-3xl font-bold mb-4 text-sky-800">第5部：日本でのメールマーケティング - 重要な考慮事項</h2>
+                    <p class="mb-4">BillionMailを日本国内で使う場合、法律と文化の理解が不可欠です。このセクションでは、日本の迷惑メール防止法（特定電子メール法）と、日本市場向けのメールエチケットについて解説します。これらを守ることで、トラブルを避け、信頼を築きましょう。</p>
+                    <div id="part5_1" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">5.1 日本の迷惑メール防止法（特定電子メール法）の理解</h3>
+                        <p class="mb-2">広告・宣伝メール送信は「特定電子メール法」で規制されています。</p>
+                        <p class="font-semibold mt-3 mb-1">主なポイント:</p>
+                        <ul class="list-disc list-inside text-sm mb-3 space-y-1">
+                            <li><strong>対象:</strong> 広告・宣伝目的のメール（SMS含む）。海外からの送信も対象。</li>
+                            <li><strong><span class="term" data-term="オプトイン">オプトイン</span>方式の原則:</strong> 事前同意なしの広告メール送信は原則禁止。
+                                <ul class="list-circle list-inside ml-4 text-xs">
+                                    <li>例外: 既存取引関係、名刺交換、契約通知付随広告など。</li>
+                                </ul>
+                            </li>
+                            <li><strong>同意記録の保存義務:</strong> 同意取得の時期や方法を記録・保存。</li>
+                            <li><strong>表示義務:</strong>
+                                <ul class="list-circle list-inside ml-4 text-xs">
+                                    <li>送信者の氏名/名称。</li>
+                                    <li>受信拒否の通知ができる旨と、その連絡先（メアド/URL）。</li>
+                                    <li>送信者の住所。</li>
+                                    <li>苦情・問合せ先。</li>
+                                    <li>送信者情報（メアド、IP、ドメイン名）の偽装禁止。</li>
+                                </ul>
+                            </li>
+                            <li><strong>受信拒否への対応:</strong> 受信拒否通知後は送信禁止。</li>
+                            <li><strong>罰則:</strong> 違反すると懲役や高額な罰金、行政処分も。</li>
+                        </ul>
+                        <p class="text-xs text-rose-600">詳細は総務省ウェブサイト等で最新情報を確認してください。</p>
+                    </div>
+                    <div id="part5_2" class="content-section ml-2">
+                        <h3 class="text-2xl font-semibold mb-3 text-sky-700">5.2 日本市場向けのメールエチケットとベストプラクティス</h3>
+                        <p class="mb-2">法律遵守に加え、日本のビジネス文化やメールエチケットも重要です。</p>
+                        <ul class="list-disc list-inside text-sm mb-3 space-y-1">
+                            <li><strong>フォーマルな表現:</strong> 常に敬意を払い、丁寧な言葉遣い。役職名も正確に。</li>
+                            <li><strong>メールの構成:</strong> 時候の挨拶、明確な目的、丁寧な結び。署名は会社情報が先。</li>
+                            <li><strong>技術的配慮:</strong>
+                                <ul class="list-circle list-inside ml-4 text-xs">
+                                    <li>文字エンコーディング: UTF-8。</li>
+                                    <li>モバイルフレンドリー（レスポンシブデザイン）。</li>
+                                    <li>メールサイズ: 50KB以下目安（キャリア向け）。アニメーションGIF注意。</li>
+                                    <li>HTMLとプレーンテキスト両方提供が望ましい。</li>
+                                </ul>
+                            </li>
+                            <li><strong>コンテンツと件名:</strong>
+                                <ul class="list-circle list-inside ml-4 text-xs">
+                                    <li>件名: 短く具体的。過度な装飾や煽りNG。</li>
+                                    <li>本文: 短い段落、左揃え。漢字多くても読みやすく。</li>
+                                    <li>CTA: グループ参加や協調を促す表現。</li>
+                                    <li>価値提案: 会社全体やチームへのメリット強調。</li>
+                                    <li>ローカライズ: 日本の事例や顧客の声活用。</li>
+                                </ul>
+                            </li>
+                            <li><strong>テスト:</strong> 日本の主要メールクライアント（Outlook, Gmail, Yahoo!, キャリアメール）で表示テスト。SpamAssassin-JPでスコアチェックも有効。</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="part6" class="content-section">
+                    <h2 class="text-3xl font-bold mb-4 text-sky-800">第6部：結論と次のステップ</h2>
+                    <p class="mb-3">ここまで、BillionMailを使って自分だけのメール配信システムを構築・運用するための知識と手順を網羅的に学んできました。BillionMailの概要からVPS選定、サーバー設定、インストール、DNS設定、キャンペーン作成、運用保守、そして日本での法的・文化的注意点まで、あなたの冒険に必要な地図は手に入ったはずです！</p>
+
+                    <div class="highlight-info">
+                        <p class="font-bold">これまでの達成事項の振り返り：</p>
+                        <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                            <li>セルフホスト型メールマーケティングとBillionMailの価値を理解しました。</li>
+                            <li>メール配信の技術的要素（VPS, ドメイン, SMTP, DNS等）の基礎を習得しました。</li>
+                            <li>Linuxサーバー設定、Docker環境構築、BillionMailインストール手順を学びました。</li>
+                            <li>重要なDNSレコード（A, MX, SPF, DKIM, DMARC）の役割と設定方法を理解しました。</li>
+                            <li>BillionMailの基本操作（リスト管理, キャンペーン作成, レポート確認）を把握しました。</li>
+                            <li>システムのメンテナンス（セキュリティアップデートの重要性含む）と初歩的なトラブルシューティングを学びました。</li>
+                            <li>日本でのメールマーケティングにおける法律とエチケットを認識しました。</li>
+                        </ul>
+                    </div>
+
+                    <p class="mb-3">BillionMailを自ら運用する最大のメリットは、<strong>完全なコントロール</strong>、<strong>コスト効率</strong>、そしてこのプロセスを通じて得られる<strong>深い学び</strong>です。商用サービスでは見えにくいメール配信の裏側を理解することは、将来必ず役立つ貴重な経験となるでしょう。</p>
+                    <div class="security-emphasis">
+                        <p class="font-bold">継続的な学習と責任ある運用を！</p>
+                        <p class="text-sm mt-1">このガイドはスタートラインです。特にLinuxサーバーの運用は、セキュリティ対策と定期的なアップデートが生命線です。これを怠ると、あなた自身だけでなく、あなたのメールを受け取る人々にも迷惑をかける可能性があります。常に学び続け、責任を持ってシステムを運用してください。</p>
+                    </div>
+
+                    <h3 class="text-xl font-semibold my-3 text-sky-700">あなたの旅へのエール：</h3>
+                    <p class="mb-3">非エンジニアかつ初心者であるあなたが、ここまで挑戦する意欲は本当に素晴らしいです！技術的な壁にぶつかることもあるかもしれませんが、このガイドで得た知識と、利用できるリソースを活用すれば、きっと乗り越えられます。</p>
+                    <p class="mb-3">焦らず、一つ一つのステップを楽しみながら進んでください。小さな成功が大きな自信に繋がります。このBillionMail習得の旅が、あなたにとって実り多く、エキサイティングなものになることを心から願っています。</p>
+                    <p class="text-amber-700 font-semibold">困ったときは、いつでもこのガイドを読み返し、助けを得る場所（第4.3節）を活用してください。あなたの挑戦を応援しています！</p>
+                </section>
+            </main>
+        </div>
+
+        <footer class="bg-sky-800 text-stone-200 p-4 mt-8 text-center text-sm">
+            <p>&copy; 2025 BillionMailインタラクティブガイド. All rights reserved (for this SPA example).</p>
+        </footer>
+    </div>
+
+    <div id="termModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeModalBtn">&times;</span>
+            <h3 id="modalTerm" class="text-xl font-semibold mb-2 text-sky-700"></h3>
+            <div id="modalDefinition" class="text-sm modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        const terms = {
+            "BillionMail": "ニュースレターやマーケティングメールの送信、メールコミュニケーションの管理を行うための、オープンソースのセルフホスト型メールマーケティングツールキットです。",
+            "セルフホスト型": "自分自身で管理するサーバー上でソフトウェアを運用する方式のことです。データの完全なコントロールが可能になります。",
+            "ドメイン名": "例: `yourcompany.com` のような、ウェブサイトやメールアドレスに使用されるインターネット上の固有の住所です。",
+            "VPS": "仮想専用サーバー（Virtual Private Server）の略。物理サーバーを仮想的に分割し、専用サーバーのように利用できるレンタルサーバーの一種です。",
+            "IPアドレス": "インターネット上の機器（サーバーやコンピュータなど）に割り当てられる数値の識別子です。例: `192.0.2.123`",
+            "SMTP": "Simple Mail Transfer Protocolの略。電子メールを送信（配送）するためのプロトコル（通信規約）です。",
+            "IMAP/POP3": "IMAP (Internet Message Access Protocol) と POP3 (Post Office Protocol version 3) は、電子メールを受信するためのプロトコルです。",
+            "DNSレコード": "Domain Name Systemレコードの略。ドメイン名に関する情報を管理し、ドメイン名とIPアドレスの紐付けなどを行うための設定情報です。",
+            "SPF": "Sender Policy Frameworkの略。送信元ドメインがメール送信を許可しているサーバーを宣言する仕組みで、メールのなりすましを防ぎます。",
+            "DKIM": "DomainKeys Identified Mailの略。送信メールに電子署名を付加し、メールの改ざん検知と送信者の正当性を検証する仕組みです。",
+            "DMARC": "Domain-based Message Authentication, Reporting, and Conformanceの略。SPFとDKIMの検証結果に基づき、認証に失敗したメールの取り扱いポリシーを指示し、レポートを受け取る仕組みです。",
+            "ポート25": "メールサーバー間でSMTP通信を行うために伝統的に使用されるポート番号です。スパム対策のため、一部プロバイダーでブロックされていることがあります。",
+            "SMTPリレー": "自身のメールサーバーから送信されるメールを、専門のメール配信サービスプロバイダーのサーバーを経由して送信する仕組みです。到達率向上やポート25ブロック回避に役立ちます。",
+            "Docker": "コンテナ型仮想化技術の一つ。アプリケーションとその依存関係をコンテナにパッケージ化し、どんな環境でも同じように実行できるようにします。",
+            "タグ": "購読者に対して特定のキーワード（例：「イベント参加者」）を付与し、柔軟にグループ分けするためのラベルのようなものです。",
+            "セグメンテーション": "購読者の属性や行動に基づいて、動的にグループを作成する機能です。よりターゲットを絞ったメール配信が可能になります。",
+            "パーソナライゼーショントークン": "メール文中に `{{firstName}}` のように記述することで、購読者ごとの情報（名前など）に自動的に置き換えられる特別な文字列です。",
+            "オプトイン": "受信者が事前に明確な同意（メール受信の承諾）を示すことです。日本の特定電子メール法では、広告・宣伝メールの送信には原則としてオプトインが必要です。"
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('nav a.nav-item');
+            const contentSections = document.querySelectorAll('.content-section');
+            const termElements = document.querySelectorAll('.term');
+            const modal = document.getElementById('termModal');
+            const modalTerm = document.getElementById('modalTerm');
+            const modalDefinition = document.getElementById('modalDefinition');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const sidebar = document.getElementById('sidebar');
+            const mobileMenuButton = document.getElementById('mobileMenuButton');
+            const mainContent = document.getElementById('mainContent');
+
+            mobileMenuButton.addEventListener('click', () => {
+                sidebar.classList.toggle('hidden');
+            });
+
+            function updateActiveNav(sectionId) {
+                navLinks.forEach(link => {
+                    link.classList.remove('active-nav');
+                    if (link.getAttribute('data-section') === sectionId || link.getAttribute('href') === `#${sectionId}`) {
+                        link.classList.add('active-nav');
+                        let parentUl = link.closest('ul.ml-4');
+                        if (parentUl) {
+                            parentUl.classList.remove('hidden');
+                             if (parentUl.previousElementSibling) {
+                                parentUl.previousElementSibling.classList.add('active-nav');
+                            }
+                        }
+                    }
+                });
+            }
+            
+            function showInitialSection() {
+                const hash = window.location.hash.substring(1);
+                let sectionToShow = hash || 'part1'; 
+                if (hash && !document.getElementById(hash)) { 
+                    const navLinkForHash = document.querySelector(`a[data-section="${hash}"]`);
+                    if (navLinkForHash) {
+                         const parentSectionLink = navLinkForHash.closest('ul.ml-4')?.previousElementSibling;
+                         if(parentSectionLink) sectionToShow = parentSectionLink.getAttribute('data-section') || 'part1';
+                    }
+                }
+
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                const mainSectionElement = document.getElementById(sectionToShow.split('_')[0]);
+                if (mainSectionElement) mainSectionElement.classList.add('active');
+                
+                const specificSectionElement = document.getElementById(sectionToShow);
+                if (specificSectionElement && specificSectionElement.classList.contains('content-section')) {
+                     specificSectionElement.classList.add('active');
+                }
+
+                updateActiveNav(sectionToShow);
+                if (hash && document.getElementById(hash)) {
+                     const targetElement = document.getElementById(hash);
+                     if(targetElement) {
+                        mainContent.scrollTop = 0; 
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                     }
+                } else if (document.getElementById(sectionToShow.split('_')[0])) {
+                     mainContent.scrollTop = 0;
+                }
+            }
+
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const sectionId = this.getAttribute('data-section');
+                    const isParentLink = !this.closest('ul.ml-4');
+
+                    if (isParentLink) {
+                        const subMenu = this.nextElementSibling;
+                        if (subMenu && subMenu.tagName === 'UL') {
+                            subMenu.classList.toggle('hidden');
+                        }
+                    }
+                    
+                    contentSections.forEach(section => section.classList.remove('active'));
+                    
+                    const mainSectionToShow = document.getElementById(sectionId.split('_')[0]);
+                    if (mainSectionToShow) mainSectionToShow.classList.add('active');
+
+                    const targetContentSection = document.getElementById(sectionId);
+                    if (targetContentSection && targetContentSection.classList.contains('content-section')) {
+                        targetContentSection.classList.add('active');
+                    }
+                    
+                    mainContent.scrollTop = 0;
+                    updateActiveNav(sectionId);
+                    window.location.hash = sectionId;
+
+                    if (sidebar.classList.contains('md:block') && !sidebar.classList.contains('hidden') && window.innerWidth < 768) {
+                        sidebar.classList.add('hidden');
+                    }
+                });
+            });
+            
+            termElements.forEach(termEl => {
+                termEl.addEventListener('click', () => {
+                    const termKey = termEl.dataset.term;
+                    if (terms[termKey]) {
+                        modalTerm.textContent = termKey;
+                        modalDefinition.innerHTML = `<p>${terms[termKey]}</p>`;
+                        modal.style.display = 'block';
+                    }
+                });
+            });
+
+            closeModalBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            window.addEventListener('click', (event) => {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            });
+
+            document.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const codeBlock = button.parentElement.querySelector('code');
+                    const codeToCopy = codeBlock.innerText;
+                    
+                    const textarea = document.createElement('textarea');
+                    textarea.value = codeToCopy;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    try {
+                        document.execCommand('copy');
+                        button.textContent = 'コピー完了!';
+                        setTimeout(() => { button.textContent = 'コピー'; }, 2000);
+                    } catch (err) {
+                        console.error('コピーに失敗しました', err);
+                        button.textContent = '失敗';
+                         setTimeout(() => { button.textContent = 'コピー'; }, 2000);
+                    }
+                    document.body.removeChild(textarea);
+                });
+            });
+
+            const campaignChartCtx = document.getElementById('campaignAnalyticsChart');
+            if (campaignChartCtx) {
+                new Chart(campaignChartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['ニュースレター4月号', '春のセール告知', '新機能紹介', 'ウェビナー案内'],
+                        datasets: [{
+                            label: '開封率 (%)',
+                            data: [65, 72, 58, 68],
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }, {
+                            label: 'クリック率 (%)',
+                            data: [15, 22, 12, 18],
+                            backgroundColor: 'rgba(251, 146, 60, 0.6)',
+                            borderColor: 'rgba(251, 146, 60, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return value + "%" }}}},
+                        plugins: {
+                            tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + context.parsed.y + '%'; }}},
+                            legend: { position: 'top' }
+                        }
+                    }
+                });
+            }
+            
+            window.addEventListener('hashchange', showInitialSection);
+            showInitialSection();
+
+        });
+    </script>
+</body>
+</html>
